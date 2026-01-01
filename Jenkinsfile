@@ -10,13 +10,13 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t campus-complaint .'
+                bat 'docker build -t campus-image .'
             }
         }
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 5000:5000 campus-complaint'
+                bat 'docker run -d --name campus-container campus-image'
             }
         }
     }

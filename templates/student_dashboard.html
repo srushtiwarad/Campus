@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color:lightcyan;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        .logout {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .logout a {
+            text-decoration: none;
+            color: #fff;
+            background-color: #e74c3c;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .logout a:hover {
+            background-color: #c0392b;
+        }
+
+        /* Complaint Form */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        input, textarea, select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 100%;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 5px #3498db;
+            outline: none;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: scale(1.02);
+        }
+
+        /* Complaints Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Status colors */
+        .Pending { color: orange; font-weight: bold; }
+        .In\ Progress { color: #3498db; font-weight: bold; }
+        .Resolved { color: green; font-weight: bold; }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logout">
+            <a href="/logout">Logout</a>
+        </div>
+
+        <h2>Welcome, {{ student | capitalize }}</h2>
+
+        <h3>Submit a Complaint</h3>
+        <form method="POST">
+            <input type="text" name="title" placeholder="Complaint Title" required>
+            <select name="category" required>
+                <option value="">Select Category</option>
+                <option value="Wi-Fi">Wi-Fi</option>
+                <option value="Mess">Mess</option>
+                <option value="Hostel">Hostel</option>
+                <option value="Library">Library</option>
+                <option value="Other">Other</option>
+            </select>
+            <textarea name="description" placeholder="Describe your complaint..." rows="4" required></textarea>
+            <button type="submit">Submit Complaint</button>
+        </form>
+
+        <h3>Your Complaints</h3>
+        <table>
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Status</th>
+            </tr>
+            {% for comp in complaints %}
+            <tr>
+                <td>{{ comp.title }}</td>
+                <td>{{ comp.category }}</td>
+                <td>{{ comp.description }}</td>
+                <td class="{{ comp.status|replace(' ', '\\ ') }}">{{ comp.status }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>

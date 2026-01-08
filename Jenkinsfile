@@ -18,7 +18,7 @@ pipeline {
             steps {
                 bat '''
                 docker rm -f campus-container || exit 0
-                docker run -d --name campus-container campus-image
+                docker run -d -p 5000:5000 --name campus-container campus-image
                 '''
             }
         }

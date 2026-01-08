@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         * {
             box-sizing: border-box;
@@ -38,7 +40,6 @@
             padding: 8px 15px;
             background-color: #d32f2f;
             color: white;
-            border: none;
             border-radius: 8px;
             text-decoration: none;
             transition: 0.3s;
@@ -110,8 +111,9 @@
             background-color: #1b5e20;
         }
 
+        /* Status colors */
         .status-Pending { color: #f57c00; font-weight: bold; }
-        .status-In\ Progress { color: #1976d2; font-weight: bold; }
+        .status-In-Progress { color: #1976d2; font-weight: bold; }
         .status-Resolved { color: #388e3c; font-weight: bold; }
 
         @media(max-width: 768px){
@@ -122,51 +124,54 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/logout" class="logout">Logout</a>
-        <h2>Admin Dashboard</h2>
+<div class="container">
+    <a href="/logout" class="logout">Logout</a>
+    <h2>Admin Dashboard</h2>
 
-        <div class="filters">
-            <a href="/admin_dashboard?filter=pending">Pending</a>
-            <a href="/admin_dashboard?filter=in progress">In Progress</a>
-            <a href="/admin_dashboard?filter=resolved">Resolved</a>
-            <a href="/admin_dashboard">All</a>
-        </div>
-
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Student</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Update</th>
-            </tr>
-            {% for comp in complaints %}
-            <tr>
-                <td>{{ comp.id }}</td>
-                <td>{{ comp.student }}</td>
-                <td>{{ comp.title }}</td>
-                <td>{{ comp.category }}</td>
-                <td>{{ comp.description }}</td>
-                <td class="status-{{ comp.status|replace(' ','\\ ') }}">
-                    <!-- Form only inside this cell -->
-                    <form method="POST" action="/update_status">
-                        <input type="hidden" name="id" value="{{ comp.id }}">
-                        <select name="status">
-                            <option value="Pending" {% if comp.status=='Pending' %}selected{% endif %}>Pending</option>
-                            <option value="In Progress" {% if comp.status=='In Progress' %}selected{% endif %}>In Progress</option>
-                            <option value="Resolved" {% if comp.status=='Resolved' %}selected{% endif %}>Resolved</option>
-                        </select>
-                </td>
-                <td>
-                        <button type="submit" class="update-btn">Update</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+    <div class="filters">
+        <a href="/admin_dashboard?filter=pending">Pending</a>
+        <a href="/admin_dashboard?filter=in progress">In Progress</a>
+        <a href="/admin_dashboard?filter=resolved">Resolved</a>
+        <a href="/admin_dashboard">All</a>
     </div>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Student</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Update</th>
+        </tr>
+
+        {% for comp in complaints %}
+        <tr>
+            <td>{{ comp.id }}</td>
+            <td>{{ comp.student }}</td>
+            <td>{{ comp.title }}</td>
+            <td>{{ comp.category }}</td>
+            <td>{{ comp.description }}</td>
+
+            <td class="status-{{ comp.status|replace(' ', '-') }}">
+                {{ comp.status }}
+            </td>
+
+            <td>
+                <form method="POST" action="/update_status" style="display:flex; gap:8px;">
+                    <input type="hidden" name="id" value="{{ comp.id }}">
+                    <select name="status">
+                        <option value="Pending" {% if comp.status=='Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Progress" {% if comp.status=='In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Resolved" {% if comp.status=='Resolved' %}selected{% endif %}>Resolved</option>
+                    </select>
+                    <button type="submit" class="update-btn">Update</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 </body>
 </html>

@@ -16,7 +16,10 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                bat 'docker run -d --name campus-container campus-image'
+                bat '''
+                docker rm -f campus-container || exit 0
+                docker run -d --name campus-container campus-image
+                '''
             }
         }
     }

@@ -1,105 +1,141 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
+from database import get_db
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ----------------- Users -----------------
-students = {
-    "arya":"1234",
-    "bob":"abcd",
-    "alice":"pass1",
-    "charlie":"pass2",
-    "srushti":"srushti123",
-    "student":"stud"
-}
-
-admins = {
-    "dean":"d123",
-    "admin":"admin123"
-}
-
-# ----------------- Complaints -----------------
-complaints = [
-    {"id":1, "student":"arya","title":"Wi-Fi not working","category":"Wi-Fi","description":"Internet slow","status":"Pending"},
-    {"id":2, "student":"bob","title":"Mess food","category":"Mess","description":"Cold food","status":"In Progress"}
-]
-
-# ----------------- Routes -----------------
+# ----------------- Home -----------------
 @app.route("/")
 def home():
     return redirect("/student_login")
 
+# -------- Student Register --------
+@app.route("/student_register", methods=["GET", "POST"])
+def student_register():
+    if request.method == "POST":
+        username = request.form["username"].lower()
+        password = request.form["password"]
+
+        db = get_db()
+        cur = db.cursor()
+        try:
+            cur.execute(
+                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                (username, password, "student")
+            )
+            db.commit()
+            return redirect("/student_login")
+        except:
+            return "User already exists!"
+
+    return render_template("student_register.html")
+
 # -------- Student Login --------
-@app.route("/student_login", methods=["GET","POST"])
+@app.route("/student_login", methods=["GET", "POST"])
 def student_login():
     if request.method == "POST":
         username = request.form["username"].lower()
         password = request.form["password"]
-        if username in students and students[username] == password:
+
+        db = get_db()
+        cur = db.cursor()
+        cur.execute(
+            "SELECT * FROM users WHERE username=? AND password=? AND role='student'",
+            (username, password)
+        )
+        user = cur.fetchone()
+
+        if user:
             session["student"] = username
             return redirect("/student_dashboard")
         else:
             return "Invalid credentials!"
+
     return render_template("student_login.html")
 
 # -------- Student Dashboard --------
-@app.route("/student_dashboard", methods=["GET","POST"])
+@app.route("/student_dashboard", methods=["GET", "POST"])
 def student_dashboard():
     if "student" not in session:
         return redirect("/student_login")
-    
+
+    db = get_db()
+    cur = db.cursor()
+
     if request.method == "POST":
-        new_complaint = {
-            "id": len(complaints)+1,
-            "student": session["student"],
-            "title": request.form["title"],
-            "category": request.form["category"],
-            "description": request.form["description"],
-            "status": "Pending"
-        }
-        complaints.append(new_complaint)
+        cur.execute("""
+            INSERT INTO complaints (student, title, category, description, status)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            session["student"],
+            request.form["title"],
+            request.form["category"],
+            request.form["description"],
+            "Pending"
+        ))
+        db.commit()
         return redirect("/student_dashboard")
-    
-    student_complaints = [c for c in complaints if c["student"] == session["student"]]
-    return render_template("student_dashboard.html", complaints=student_complaints, student=session["student"].capitalize())
+
+    cur.execute(
+        "SELECT * FROM complaints WHERE student=?",
+        (session["student"],)
+    )
+    complaints = cur.fetchall()
+
+    return render_template(
+        "student_dashboard.html",
+        complaints=complaints,
+        student=session["student"]
+    )
 
 # -------- Admin Login --------
-@app.route("/admin_login", methods=["GET","POST"])
+@app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        username = request.form["username"].lower()
+        username = request.form["username"]
         password = request.form["password"]
-        if username in admins and admins[username] == password:
+
+        if username == "admin" and password == "admin123":
             session["admin"] = username
             return redirect("/admin_dashboard")
         else:
             return "Invalid credentials!"
+
     return render_template("admin_login.html")
 
 # -------- Admin Dashboard --------
-@app.route("/admin_dashboard", methods=["GET","POST"])
+@app.route("/admin_dashboard")
 def admin_dashboard():
     if "admin" not in session:
         return redirect("/admin_login")
-    
-    filter_status = request.args.get("filter")
-    filtered_complaints = complaints
-    if filter_status:
-        filtered_complaints = [c for c in complaints if c["status"].lower() == filter_status.lower()]
-    
-    return render_template("admin_dashboard.html", complaints=filtered_complaints)
+
+    status = request.args.get("filter")
+    db = get_db()
+    cur = db.cursor()
+
+    if status:
+        cur.execute("SELECT * FROM complaints WHERE status=?", (status,))
+    else:
+        cur.execute("SELECT * FROM complaints")
+
+    complaints = cur.fetchall()
+    return render_template("admin_dashboard.html", complaints=complaints)
 
 # -------- Update Complaint Status --------
 @app.route("/update_status", methods=["POST"])
 def update_status():
-    comp_id = int(request.form["id"])        # Get complaint ID
-    new_status = request.form["status"]      # Get selected status
-    for comp in complaints:                  # Find the complaint in list
-        if comp["id"] == comp_id:
-            comp["status"] = new_status     # Update the status
-            break
-    return redirect("/admin_dashboard")      # Redirect back to dashboard
+    comp_id = request.form["id"]
+    new_status = request.form["status"]
 
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "UPDATE complaints SET status=? WHERE id=?",
+        (new_status, comp_id)
+    )
+    db.commit()
+
+    return redirect("/admin_dashboard")
 
 # -------- Logout --------
 @app.route("/logout")

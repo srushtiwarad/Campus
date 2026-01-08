@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Student Dashboard</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color:lightcyan;
+            background-color: lightcyan;
             margin: 0;
             padding: 0;
         }
@@ -105,7 +109,7 @@
 
         /* Status colors */
         .Pending { color: orange; font-weight: bold; }
-        .In\ Progress { color: #3498db; font-weight: bold; }
+        .In-Progress { color: #3498db; font-weight: bold; }
         .Resolved { color: green; font-weight: bold; }
 
         @media (max-width: 600px) {
@@ -114,7 +118,6 @@
                 padding: 20px;
             }
         }
-
     </style>
 </head>
 <body>
@@ -126,8 +129,9 @@
         <h2>Welcome, {{ student | capitalize }}</h2>
 
         <h3>Submit a Complaint</h3>
-        <form method="POST">
+        <form method="POST" action="/student_dashboard">
             <input type="text" name="title" placeholder="Complaint Title" required>
+
             <select name="category" required>
                 <option value="">Select Category</option>
                 <option value="Wi-Fi">Wi-Fi</option>
@@ -136,7 +140,9 @@
                 <option value="Library">Library</option>
                 <option value="Other">Other</option>
             </select>
+
             <textarea name="description" placeholder="Describe your complaint..." rows="4" required></textarea>
+
             <button type="submit">Submit Complaint</button>
         </form>
 
@@ -153,7 +159,9 @@
                 <td>{{ comp.title }}</td>
                 <td>{{ comp.category }}</td>
                 <td>{{ comp.description }}</td>
-                <td class="{{ comp.status|replace(' ', '\\ ') }}">{{ comp.status }}</td>
+                <td class="{{ comp.status|replace(' ', '-') }}">
+                    {{ comp.status }}
+                </td>
             </tr>
             {% endfor %}
         </table>

@@ -1,15 +1,31 @@
 from flask import Flask, render_template, request, redirect, session
-from database import get_db
+from database import get_db, close_db
 
 app = Flask(__name__)
 app.secret_key = "secret123"
+app.teardown_appcontext(close_db)
 
-# ----------------- Home -----------------
+# ---------------- CREATE DEFAULT ADMIN ----------------
+def create_default_admin():
+    db = get_db()
+    admin = db.execute(
+        "SELECT * FROM users WHERE role='admin'"
+    ).fetchone()
+
+    if admin is None:
+        db.execute(
+            "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+            ("admin", "admin123", "admin")
+        )
+        db.commit()
+        print("Default admin created")
+
+# ---------------- HOME ----------------
 @app.route("/")
 def home():
     return redirect("/student_login")
 
-# -------- Student Register --------
+# -------- STUDENT REGISTER --------
 @app.route("/student_register", methods=["GET", "POST"])
 def student_register():
     if request.method == "POST":
@@ -17,9 +33,8 @@ def student_register():
         password = request.form["password"]
 
         db = get_db()
-        cur = db.cursor()
         try:
-            cur.execute(
+            db.execute(
                 "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
                 (username, password, "student")
             )
@@ -30,7 +45,7 @@ def student_register():
 
     return render_template("student_register.html")
 
-# -------- Student Login --------
+# -------- STUDENT LOGIN --------
 @app.route("/student_login", methods=["GET", "POST"])
 def student_login():
     if request.method == "POST":
@@ -38,14 +53,12 @@ def student_login():
         password = request.form["password"]
 
         db = get_db()
-        cur = db.cursor()
-        cur.execute(
-            "SELECT * FROM users WHERE username=? AND password=? AND role='student'",
-            (username, password)
-        )
-        user = cur.fetchone()
+        user = db.execute(
+            "SELECT * FROM users WHERE username=? AND role='student'",
+            (username,)
+        ).fetchone()
 
-        if user:
+        if user and user["password"] == password:
             session["student"] = username
             return redirect("/student_dashboard")
         else:
@@ -53,17 +66,16 @@ def student_login():
 
     return render_template("student_login.html")
 
-# -------- Student Dashboard --------
+# -------- STUDENT DASHBOARD --------
 @app.route("/student_dashboard", methods=["GET", "POST"])
 def student_dashboard():
     if "student" not in session:
         return redirect("/student_login")
 
     db = get_db()
-    cur = db.cursor()
 
     if request.method == "POST":
-        cur.execute("""
+        db.execute("""
             INSERT INTO complaints (student, title, category, description, status)
             VALUES (?, ?, ?, ?, ?)
         """, (
@@ -76,11 +88,10 @@ def student_dashboard():
         db.commit()
         return redirect("/student_dashboard")
 
-    cur.execute(
+    complaints = db.execute(
         "SELECT * FROM complaints WHERE student=?",
         (session["student"],)
-    )
-    complaints = cur.fetchall()
+    ).fetchall()
 
     return render_template(
         "student_dashboard.html",
@@ -88,22 +99,28 @@ def student_dashboard():
         student=session["student"]
     )
 
-# -------- Admin Login --------
+# -------- ADMIN LOGIN --------
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        username = request.form["username"]
+        username = request.form["username"].lower()
         password = request.form["password"]
 
-        if username == "admin" and password == "admin123":
+        db = get_db()
+        admin = db.execute(
+            "SELECT * FROM users WHERE username=? AND role='admin'",
+            (username,)
+        ).fetchone()
+
+        if admin and admin["password"] == password:
             session["admin"] = username
             return redirect("/admin_dashboard")
         else:
-            return "Invalid credentials!"
+            return "Invalid admin credentials!"
 
     return render_template("admin_login.html")
 
-# -------- Admin Dashboard --------
+# -------- ADMIN DASHBOARD --------
 @app.route("/admin_dashboard")
 def admin_dashboard():
     if "admin" not in session:
@@ -111,39 +128,42 @@ def admin_dashboard():
 
     status = request.args.get("filter")
     db = get_db()
-    cur = db.cursor()
 
     if status:
-        cur.execute("SELECT * FROM complaints WHERE status=?", (status,))
+        complaints = db.execute(
+            "SELECT * FROM complaints WHERE status=?",
+            (status,)
+        ).fetchall()
     else:
-        cur.execute("SELECT * FROM complaints")
+        complaints = db.execute(
+            "SELECT * FROM complaints"
+        ).fetchall()
 
-    complaints = cur.fetchall()
     return render_template("admin_dashboard.html", complaints=complaints)
 
-# -------- Update Complaint Status --------
+# -------- UPDATE STATUS --------
 @app.route("/update_status", methods=["POST"])
 def update_status():
-    comp_id = request.form["id"]
-    new_status = request.form["status"]
+    if "admin" not in session:
+        return redirect("/admin_login")
 
     db = get_db()
-    cur = db.cursor()
-    cur.execute(
+    db.execute(
         "UPDATE complaints SET status=? WHERE id=?",
-        (new_status, comp_id)
+        (request.form["status"], request.form["id"])
     )
     db.commit()
 
     return redirect("/admin_dashboard")
 
-# -------- Logout --------
+# -------- LOGOUT --------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/student_login")
 
-# ----------------- Run App -----------------
+# -------- RUN APP --------
 if __name__ == "__main__":
+    with app.app_context():
+        create_default_admin()
     app.run(debug=True)
-

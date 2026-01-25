@@ -120,20 +120,30 @@ def admin_login():
 
     return render_template("admin_login.html")
 
-# -------- ADMIN DASHBOARD --------
+# -------- ADMIN DASHBOARD (FILTER WORKING) --------
 @app.route("/admin_dashboard")
 def admin_dashboard():
     if "admin" not in session:
         return redirect("/admin_login")
 
-    status = request.args.get("filter")
+    filter_status = request.args.get("filter")
     db = get_db()
 
-    if status:
+    if filter_status == "pending":
         complaints = db.execute(
-            "SELECT * FROM complaints WHERE status=?",
-            (status,)
+            "SELECT * FROM complaints WHERE status='Pending'"
         ).fetchall()
+
+    elif filter_status == "in progress":
+        complaints = db.execute(
+            "SELECT * FROM complaints WHERE status='In Progress'"
+        ).fetchall()
+
+    elif filter_status == "resolved":
+        complaints = db.execute(
+            "SELECT * FROM complaints WHERE status='Resolved'"
+        ).fetchall()
+
     else:
         complaints = db.execute(
             "SELECT * FROM complaints"

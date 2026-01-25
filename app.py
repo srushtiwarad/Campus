@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
+
 from database import get_db, close_db
 
 app = Flask(__name__)
@@ -39,11 +40,17 @@ def student_register():
                 (username, password, "student")
             )
             db.commit()
+
+            flash("Registered successfully! Please login.", "success")
             return redirect("/student_login")
+
         except:
-            return "User already exists!"
+            flash("User already registered. Please login.", "error")
+            return redirect("/student_login")
 
     return render_template("student_register.html")
+
+
 
 # -------- STUDENT LOGIN --------
 @app.route("/student_login", methods=["GET", "POST"])

@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, session, flash
-
 from database import get_db, close_db
 
 app = Flask(__name__)
@@ -40,7 +39,6 @@ def student_register():
                 (username, password, "student")
             )
             db.commit()
-
             flash("Registered successfully! Please login.", "success")
             return redirect("/student_login")
 
@@ -49,8 +47,6 @@ def student_register():
             return redirect("/student_login")
 
     return render_template("student_register.html")
-
-
 
 # -------- STUDENT LOGIN --------
 @app.route("/student_login", methods=["GET", "POST"])
@@ -69,7 +65,7 @@ def student_login():
             session["student"] = username
             return redirect("/student_dashboard")
         else:
-            return "Invalid credentials!"
+            flash("Invalid credentials!", "error")
 
     return render_template("student_login.html")
 
@@ -93,6 +89,7 @@ def student_dashboard():
             "Pending"
         ))
         db.commit()
+        flash("Complaint submitted successfully!", "success")
         return redirect("/student_dashboard")
 
     complaints = db.execute(
@@ -123,7 +120,7 @@ def admin_login():
             session["admin"] = username
             return redirect("/admin_dashboard")
         else:
-            return "Invalid admin credentials!"
+            flash("Invalid admin credentials!", "error")
 
     return render_template("admin_login.html")
 
@@ -171,6 +168,23 @@ def update_status():
     )
     db.commit()
 
+    flash("Status updated successfully!", "success")
+    return redirect("/admin_dashboard")
+
+# -------- DELETE COMPLAINT --------
+@app.route("/delete_complaint/<int:id>", methods=["POST"])
+def delete_complaint(id):
+    if "admin" not in session:
+        return redirect("/admin_login")
+
+    db = get_db()
+    db.execute(
+        "DELETE FROM complaints WHERE id=?",
+        (id,)
+    )
+    db.commit()
+
+    flash("Complaint deleted successfully!", "success")
     return redirect("/admin_dashboard")
 
 # -------- LOGOUT --------
@@ -183,5 +197,4 @@ def logout():
 if __name__ == "__main__":
     with app.app_context():
         create_default_admin()
-    app.run(host="0.0.0.0", port=5000)
-
+    app.run(host="0.0.0.0", port=5000, debug=True)
